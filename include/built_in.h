@@ -58,6 +58,7 @@ int validate_pwd_argv(int argc, char** argv);
 
 int validate_fg_argv(int argc, char** argv);
 
-int do_exec(int argc, char** argv); // written by sim
+int do_exec(char** argv); // written by sim
+char* getFullDirectory(char** argv);
 #endif // BUILT_IN_H_
 

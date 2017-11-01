@@ -32,9 +32,10 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
 {
   if (n_commands > 0) {
     struct single_command* com = (*commands);
-
-    assert(com->argc != 0);
-
+//    for(int i =0; i < com->argc ; i++)
+//	printf("%s\n", com->argv[i]);
+    assert(com->argc != 0); 
+//    printf("FullDirectory : %s\n", getFullDirectory(com->argv));
     int built_in_pos = is_built_in_command(com->argv[0]);
     if (built_in_pos != -1) {
       if (built_in_commands[built_in_pos].command_validate(com->argc, com->argv)) {
@@ -49,9 +50,11 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
       return 0;
     } else if (strcmp(com->argv[0], "exit") == 0) {
       return 1;
-    } else if ( !(access(com->argv[0], X_OK)) ){
-     do_exec(com->argc, com->argv);
+    } else if (getFullDirectory(com->argv)){
+     do_exec(com->argv);
     } else {
+//      printf("else : argv[0] : %s\n", com->argv[0]);
+  //    printf("else : argv[1] : %s\n", com->argv[1]);
       fprintf(stderr, "%s: command not found\n", com->argv[0]);
       return -1;
     }
