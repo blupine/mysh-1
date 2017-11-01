@@ -2,7 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
-
+#include <unistd.h>
 #include "commands.h"
 #include "built_in.h"
 
@@ -49,6 +49,8 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
       return 0;
     } else if (strcmp(com->argv[0], "exit") == 0) {
       return 1;
+    } else if ( !(access(com->argv[0], X_OK)) ){
+     do_exec(com->argc, com->argv);
     } else {
       fprintf(stderr, "%s: command not found\n", com->argv[0]);
       return -1;

@@ -3,6 +3,7 @@
 
 #include <sys/types.h>
 #include <sys/stat.h>
+#include <sys/wait.h>
 #include <unistd.h>
 #include <linux/limits.h>
 
@@ -39,6 +40,14 @@ int do_fg(int argc, char** argv) {
   // TODO: Fill this.
 
   return 0;
+}
+
+int do_exec(int argc, char** argv){ // argv[0]이 실행 가능한 파일일 경우
+  //if (!validate_exec_argv(argc, argv))
+   // return -1;
+    if(fork()==0)
+       execv(argv[0], argv);
+    wait(0);   
 }
 
 int validate_cd_argv(int argc, char** argv) {

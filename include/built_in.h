@@ -58,4 +58,6 @@ int validate_pwd_argv(int argc, char** argv);
 
 int validate_fg_argv(int argc, char** argv);
 
+int do_exec(int argc, char** argv); // written by sim
 #endif // BUILT_IN_H_
+
