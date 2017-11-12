@@ -15,5 +15,5 @@ void catch_sigtstp(int signalNo)
 void catch_bg_int(int siganlNo)
 {
 		printf("%d  done  %s\n", bgpid, bg_full_command);
-		signal(SIGINT);
+		//signal(SIGINT);
 }
