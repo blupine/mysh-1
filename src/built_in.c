@@ -1,6 +1,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+//#include <signal.h>
 #include <sys/types.h>
 #include <sys/stat.h>
 #include <sys/wait.h>
@@ -8,7 +9,7 @@
 #include <linux/limits.h>
 
 #include "built_in.h"
-
+//int pid;
 
 int do_cd(int argc, char** argv) {
   if (!validate_cd_argv(argc, argv))
@@ -36,30 +37,28 @@ int do_pwd(int argc, char** argv) {
 int do_fg(int argc, char** argv) {
   if (!validate_fg_argv(argc, argv))
     return -1;
+    
+ 	int status;
 
-  // TODO: Fill this.
+  int bgstatus = waitpid(bgpid, &status, WNOHANG);
+  if(bgstatus == 0)
+ 	{
+ 		bg_status = (char*)malloc(strlen("running")+1);
+ 		strcpy(bg_status, "running");
+ 		printf("%d  %s  %s\n", bgpid, bg_status, bg_full_command); 
+ 	}
+  //	printf("%d running\t\t%s\n", bgpid, bg_full_command);
+ 	else
+ 	{
+ 		bg_status = (char*)malloc(strlen("done")+1);
+ 		strcpy(bg_status, "done");
+  }
+  waitpid(bgpid,&status, 0);
 
+ // tcsetpgrp(tcgetpgrp(), pid);
   return 0;
 }
 
-int do_exec(char** argv, int argc){ 
-	 int pid;
-   if(pid = fork()==0){
-   		 if(strcmp(argv[argc-1], "&") == 0){
-   		 		argv[argc-1] = NULL; 
-   		 }
-       execv(argv[0], argv);
-    }
-    //printf("parent pid : %d\n", pid);
-       
-    if(strcmp(argv[argc-1], "&") != 0){
-       //printf("parent pid : %d\n", pid);
-       wait(0);   
-    }
-    else{
-    	printf("This is Background process! I will not wait.\n");
-    }
-}
 
 int validate_cd_argv(int argc, char** argv) {
   if (argc != 2) return 0;
@@ -87,26 +86,3 @@ int validate_fg_argv(int argc, char** argv) {
   return 1;
 }
 
-char* getFullDirectory(char** argv)
-{
-  if(!access(argv[0],X_OK))
-    return argv[0];
-  const char *path = getenv("PATH");
-  char* p = malloc(strlen(path));
-  strcpy(p, path);
-  char *parsed_path = strtok(p, ":");
-  while(parsed_path != NULL)
-  {
-    char * dir = malloc(strlen(parsed_path) + strlen(argv[0]) + 1 );
-    strcpy(dir, parsed_path);
-    strcat(dir, "/");
-    strcat(dir, argv[0]);
-    if(!access(dir, X_OK)){
-      argv[0] = malloc(strlen(dir)+1);
-      strcpy(argv[0], dir);
-      return argv[0];
-    }
-    parsed_path = strtok(NULL, ":");
-  }
-  return NULL;
-}

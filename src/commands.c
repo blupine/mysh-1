@@ -14,7 +14,7 @@
 #include <arpa/inet.h>
 #include <sys/un.h>
 //#include <fcntl.h>
-
+#include "signal_handlers.h"
 #define FILE_SERVER "/tmp/test_server"
 
 static struct built_in_command built_in_commands[] = {
@@ -41,32 +41,12 @@ static int is_built_in_command(const char* command_name)
  */;
 int evaluate_command(int n_commands, struct single_command (*commands)[512])
 {
-  if (n_commands > 0) 
-  {
-      if(n_commands == 1)
-      {
+  if (n_commands > 0) {
+      if(n_commands == 1){
          struct single_command* com = (*commands);
-         //printf("commands[0]->argv[commands[0]->argc-1] : %s\n", commands[0]->argv[commands[0]->argc-1]);
-        // if ( strcmp(commands[0]->argv[commands[0]->argc-1], "&") == 0 ){
-         	//	pid_t pid;
-         	//	pid = fork();
-         	//	if(pid == 0){
-         	//			printf("child pid : %d\n",pid);
-         	//			com->argc = com->argc-1;
-         //				free(com->argv[1]);
-         				//for(int i = 0 ; i < commands[0]->argc ; i++)
-         // 				//	printf("%s\n", commands[0]->argv[i]);
-         // 				exec_com(com);
-         //				exit(0);
-         //		}
-         // }
-         //else {
-         //printf("parent pid : %d\b", pid);
          return exec_com(com);//wait(0);
-         
       } 
-      else
-      {
+      else{
         struct single_command* com = (*commands);
         struct single_command* next_com = (*commands+1); 
 
@@ -78,8 +58,6 @@ int evaluate_command(int n_commands, struct single_command (*commands)[512])
       	{
 					int client_socket;
 					struct sockaddr_un server_addr;
-					//if ( 0 == access( FILE_SERVER, F_OK))
-     			//	 unlink( FILE_SERVER);
 					client_socket = socket(PF_FILE, SOCK_STREAM, 0);
 					if( -1 == client_socket)
   		    {
@@ -168,35 +146,34 @@ void *socket_thread(void* arg)
     pthread_exit(0);
 }
 
-
 int exec_com(struct single_command (*com))
 {
-         assert(com->argc != 0);
+	assert(com->argc != 0);
 
-         int built_in_pos = is_built_in_command(com->argv[0]);
-         if (built_in_pos != -1) {
-           if (built_in_commands[built_in_pos].command_validate(com->argc, com->argv)) {
-             if (built_in_commands[built_in_pos].command_do(com->argc, com->argv) != 0) {
-               printf("%s: Error occurs\n", com->argv[0]);
-             }
-           } else {
-             printf("%s: Invalid arguments\n", com->argv[0]);
-             return -1;
-           }
-         } else if (strcmp(com->argv[0], "") == 0) {
-           return 0;
-         } else if (strcmp(com->argv[0], "exit") == 0) {
-           return 1;
-         } else if (getFullDirectory(com->argv)){
-          do_exec(com->argv, com->argc);
-          return 0;
-         } else {
-           printf("%s: command not found\n", com->argv[0]);
-           return -1;
-         }
-         return 0;
-         
+	int built_in_pos = is_built_in_command(com->argv[0]);
+	if (built_in_pos != -1) {
+	if (built_in_commands[built_in_pos].command_validate(com->argc, com->argv)) {
+		if (built_in_commands[built_in_pos].command_do(com->argc, com->argv) != 0) {
+			printf("%s: Error occurs\n", com->argv[0]);
+ 		}
+	} else {
+			printf("%s: Invalid arguments\n", com->argv[0]);
+			return -1;
+		}
+	}else if (strcmp(com->argv[0], "") == 0) {
+		return 0;
+	}else if (strcmp(com->argv[0], "exit") == 0) {
+		return 1;
+	}else if (getFullPATH(com->argv)){
+		do_exec(com->argv, com->argc);
+		return 0;
+	}else {
+		printf("%s: command not found\n", com->argv[0]);
+		return -1;
+	}
+	return 0;
 }
+
 
 void free_commands(int n_commands, struct single_command (*commands)[512])
 {
@@ -208,9 +185,68 @@ void free_commands(int n_commands, struct single_command (*commands)[512])
     for (int j = 0; j < argc; ++j) {
       free(argv[j]);
     }
-
     free(argv);
   }
-
   memset((*commands), 0, sizeof(struct single_command) * n_commands);
+}
+
+
+int do_exec(char** argv, int argc){ 
+	int pid;
+	if((pid = fork())==0){
+		signal(SIGINT, SIG_DFL);   // child process terminate signal handle
+		signal(SIGTSTP, SIG_DFL);  // child process background signal handle
+		if(strcmp(argv[argc-1], "&") == 0){
+		  signal(SIGINT, catch_bg_int);
+			bg_full_command = NULL;
+			bg_status = NULL;
+ 		  bgpid = 0;
+			bgpid = getpid();              // get background process pid
+			
+			int com_length = 0;				// making full commands with argv
+			for(int i = 0 ; i < argc -1 ; i++)
+				com_length += strlen(argv[i]+1);
+			bg_full_command = (char*)malloc(com_length);
+			for(int i = 0 ; i < argc -1 ; i++){
+				strcat(bg_full_command, argv[i]);
+				if(i != argc-2) 
+					strcat(bg_full_command, " ");
+			}
+
+			printf("[1] %d\n", getpid());
+			free(argv[argc]);
+			argv[argc-1] = NULL; 
+ 		
+		}
+		execv(argv[0], argv);
+	}
+	if(strcmp(argv[argc-1], "&") != 0){
+		int status;
+		waitpid(pid, &status, 0);   
+	}
+}
+
+
+int getFullPATH(char** argv)   // make relative path to absolute path
+{
+  if(!access(argv[0],X_OK))
+    return 1;
+  const char *path = getenv("PATH");
+  char* p = malloc(strlen(path));
+  strcpy(p, path);
+  char *parsed_path = strtok(p, ":");
+  while(parsed_path != NULL)
+  {
+    char * dir = malloc(strlen(parsed_path) + strlen(argv[0]) + 1 );
+    strcpy(dir, parsed_path);
+    strcat(dir, "/");
+    strcat(dir, argv[0]);
+    if(!access(dir, X_OK)){
+      argv[0] = malloc(strlen(dir)+1);
+      strcpy(argv[0], dir);
+      return 1;
+    }
+    parsed_path = strtok(NULL, ":");
+  }
+  return 0;
 }

@@ -2,6 +2,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <signal.h>
+#include <unistd.h>
 #include "commands.h"
 #include "built_in.h"
 #include "utils.h"
@@ -9,11 +10,15 @@
 
 int main()
 {
+	setpgid(getpid(), getpid());
+	tcsetpgrp(0, getpid());
+  signal(SIGINT, catch_sigint);
+  signal(SIGTSTP, catch_sigtstp);
+ 	
   char buf[8096];
-
+	
   while (1) {
-  	signal(SIGINT, catch_sigint);
-   	signal(SIGTSTP, catch_sigtstp);
+
     fgets(buf, 8096, stdin);
 
     struct single_command commands[512];
