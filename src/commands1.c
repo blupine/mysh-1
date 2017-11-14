@@ -191,7 +191,7 @@ int do_exec(char** argv, int argc){
 			com_length += strlen(argv[i]+1);
 		bg_full_command = (char*)malloc(com_length);
 		strcpy(bg_full_command, argv[0]);
-		strcat(bg_full_command, " ");
+		strcpy(bg_full_command, " ");
 		for(int i = 1 ; i < argc -1 ; i++){
 			strcat(bg_full_command, argv[i]);
 			if(i != argc-2) 
@@ -218,20 +218,20 @@ int getFullPATH(char** argv)   // make relative path to absolute path
 		return 1;
 	const char *path = getenv("PATH");
 	char* p = malloc(strlen(path));
-  	strcpy(p, path);
+  strcpy(p, path);
 	char *parsed_path = strtok(p, ":");
 	while(parsed_path != NULL)
 	{
-	char * dir = malloc(strlen(parsed_path) + strlen(argv[0]) + 1 );
-	strcpy(dir, parsed_path);
-	strcat(dir, "/");
-	strcat(dir, argv[0]);
-	if(!access(dir, X_OK)){
-		argv[0] = malloc(strlen(dir)+1);
-		strcpy(argv[0], dir);
-		return 1;
-    }
-    parsed_path = strtok(NULL, ":");
+		char * dir = (char*)malloc(strlen(parsed_path) + strlen(argv[0]) + 1 );
+		strcpy(dir, parsed_path);
+		strcat(dir, "/");
+		strcat(dir, argv[0]);
+		if(!access(dir, X_OK)){
+			argv[0] = malloc(strlen(dir)+1);
+			strcpy(argv[0], dir);
+			return 1;
+		}
+		parsed_path = strtok(NULL, ":");
 	}
 	return 0;
 }
