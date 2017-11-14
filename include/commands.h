@@ -19,5 +19,5 @@ int getFullPATH(char** argv);
 
 void* socket_thread(void* argv);
 
-
+void* print_bg_terminate(void* argv);
 #endif // MYSH_COMMANDS_H_

@@ -1,3 +1,4 @@
+#define _POSIX_SOURCE
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -10,8 +11,6 @@
 
 int main()
 {
-	setpgid(getpid(), getpid());
-	tcsetpgrp(0, getpid());
   signal(SIGINT, catch_sigint);
   signal(SIGTSTP, catch_sigtstp);
  	
@@ -26,7 +25,7 @@ int main()
     mysh_parse_command(buf, &n_commands, &commands);
     	
     int ret = evaluate_command(n_commands, &commands);
-
+	
     free_commands(n_commands, &commands);
     n_commands = 0;
 
@@ -35,6 +34,7 @@ int main()
       break;
     }
   }
-
-  return 0;
+	if(bgpid != 0)
+		kill(bgpid, SIGKILL); 
+	return 0;
 }

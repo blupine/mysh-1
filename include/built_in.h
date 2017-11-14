@@ -63,7 +63,5 @@ int bgpid;
 
 char* bg_full_command;
 
-char * bg_status;
-
 #endif // BUILT_IN_H_
 
